@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies for OpenCV
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgl1 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install pipeline dependencies
+COPY requirements-pipeline.txt .
+RUN pip install --no-cache-dir -r requirements-pipeline.txt
+
+# Copy pipeline code
+COPY pipeline/ ./pipeline/
+COPY store_layout.json .
+
+# Create events output directory
+RUN mkdir -p /app/events
+
+# YOLOv8 model will be auto-downloaded on first run
+# Pre-download to avoid runtime delays (optional)
+RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+
+ENTRYPOINT ["python", "pipeline/detect.py"]

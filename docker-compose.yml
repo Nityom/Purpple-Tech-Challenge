@@ -1,0 +1,46 @@
+services:
+  # -------------------------------------------------------------------------
+  # Intelligence API
+  # -------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: store-intelligence-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./store_intelligence.db:/app/store_intelligence.db
+      - ./events:/app/events
+    environment:
+      - DATABASE_URL=sqlite:///./store_intelligence.db
+      - POS_CSV_PATH=Brigade_Bangalore_10_April_26 (1)bc6219c.csv
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import httpx; r = httpx.get('http://localhost:8000/health'); exit(0 if r.status_code == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # -------------------------------------------------------------------------
+  # Live Dashboard (optional — runs after API is healthy)
+  # -------------------------------------------------------------------------
+  dashboard:
+    image: python:3.11-slim
+    container_name: store-intelligence-dashboard
+    working_dir: /app
+    volumes:
+      - ./dashboard:/app/dashboard
+      - ./requirements-dashboard.txt:/app/requirements-dashboard.txt
+    command: >
+      sh -c "pip install --quiet -r requirements-dashboard.txt &&
+             python dashboard/live.py --store-id STORE_BLR_001 --api-url http://api:8000"
+    depends_on:
+      api:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    profiles:
+      - dashboard   # Start with: docker compose --profile dashboard up

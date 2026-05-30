@@ -1,0 +1,83 @@
+{
+  "STORE_BLR_001": {
+    "store_name": "Brigade_Bangalore",
+    "pos_store_id": "ST1008",
+    "city": "Bangalore",
+    "address": "Brigade Road, Bangalore",
+    "open_hours": { "open": "10:00", "close": "22:00" },
+    "cameras": {
+      "CAM_ENTRY_01": {
+        "file": "CAM 1.mp4",
+        "type": "entry_exit",
+        "description": "Main entrance / exit threshold camera",
+        "zones_covered": ["ENTRY_EXIT"],
+        "entry_line": {
+          "axis": "y",
+          "normalized_position": 0.60,
+          "inbound_direction": "top_to_bottom",
+          "comment": "Person crossing line top→bottom = ENTRY; bottom→top = EXIT"
+        },
+        "roi_polygons": {
+          "ENTRY_EXIT": [[0.0, 0.5], [1.0, 0.5], [1.0, 1.0], [0.0, 1.0]]
+        }
+      },
+      "CAM_FLOOR_01": {
+        "file": "CAM 2.mp4",
+        "type": "floor",
+        "description": "Main floor — Skincare and Makeup aisles",
+        "zones_covered": ["SKINCARE", "MAKEUP"],
+        "roi_polygons": {
+          "SKINCARE": [[0.0, 0.0], [0.50, 0.0], [0.50, 1.0], [0.0, 1.0]],
+          "MAKEUP":   [[0.50, 0.0], [1.0, 0.0],  [1.0, 1.0],  [0.50, 1.0]]
+        }
+      },
+      "CAM_FLOOR_02": {
+        "file": "CAM 3.mp4",
+        "type": "floor",
+        "description": "Main floor — Hair Care and Bath & Body aisles",
+        "zones_covered": ["HAIR", "BATH_BODY"],
+        "roi_polygons": {
+          "HAIR":      [[0.0, 0.0], [0.50, 0.0], [0.50, 1.0], [0.0, 1.0]],
+          "BATH_BODY": [[0.50, 0.0], [1.0, 0.0],  [1.0, 1.0],  [0.50, 1.0]]
+        }
+      },
+      "CAM_FLOOR_03": {
+        "file": "CAM 4.mp4",
+        "type": "floor",
+        "description": "Main floor — Personal Care and Fragrance aisles",
+        "zones_covered": ["PERSONAL_CARE", "FRAGRANCE"],
+        "roi_polygons": {
+          "PERSONAL_CARE": [[0.0, 0.0], [0.50, 0.0], [0.50, 1.0], [0.0, 1.0]],
+          "FRAGRANCE":     [[0.50, 0.0], [1.0, 0.0],  [1.0, 1.0],  [0.50, 1.0]]
+        }
+      },
+      "CAM_BILLING_01": {
+        "file": "CAM 5.mp4",
+        "type": "billing",
+        "description": "Billing counter and queue area",
+        "zones_covered": ["BILLING", "BILLING_QUEUE"],
+        "roi_polygons": {
+          "BILLING":       [[0.0, 0.0], [1.0, 0.0], [1.0, 0.40], [0.0, 0.40]],
+          "BILLING_QUEUE": [[0.0, 0.40], [1.0, 0.40], [1.0, 1.0], [0.0, 1.0]]
+        }
+      }
+    },
+    "zones": {
+      "ENTRY_EXIT":    { "type": "threshold", "sku_zone": null,           "display": "Store Entrance / Exit" },
+      "SKINCARE":      { "type": "product",   "sku_zone": "MOISTURISER",  "display": "Skincare Aisle" },
+      "MAKEUP":        { "type": "product",   "sku_zone": "COSMETICS",    "display": "Makeup Aisle" },
+      "HAIR":          { "type": "product",   "sku_zone": "HAIR_CARE",    "display": "Hair Care Aisle" },
+      "BATH_BODY":     { "type": "product",   "sku_zone": "BATH_BODY",    "display": "Bath & Body Aisle" },
+      "PERSONAL_CARE": { "type": "product",   "sku_zone": "PERSONAL_CARE","display": "Personal Care Aisle" },
+      "FRAGRANCE":     { "type": "product",   "sku_zone": "FRAGRANCE",    "display": "Fragrance Section" },
+      "BILLING":       { "type": "billing",   "sku_zone": null,           "display": "Billing Counter" },
+      "BILLING_QUEUE": { "type": "billing",   "sku_zone": null,           "display": "Billing Queue Area" }
+    },
+    "staff_detection": {
+      "method": "uniform_color_heuristic",
+      "uniform_hue_range_hsv": [90, 130],
+      "min_zone_presence_minutes": 60,
+      "comment": "Staff identified by store uniform colour (teal/green HSV) and long continuous presence"
+    }
+  }
+}
