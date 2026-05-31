@@ -10,7 +10,7 @@ A complete pipeline that transforms raw CCTV footage into real-time store analyt
 
 ```bash
 # 1. Clone the repository
-git clone <repo-url> && cd store-intelligence
+git clone https://github.com/Nityom/Purpple-Tech-Challenge && cd store-intelligence
 
 # 2. Create a virtual environment and install all dependencies
 python3 -m venv .venv && source .venv/bin/activate
