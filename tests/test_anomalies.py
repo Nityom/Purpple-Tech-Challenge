@@ -32,8 +32,14 @@ from app.main import app
 # Test DB
 # ---------------------------------------------------------------------------
 
+from sqlalchemy.pool import StaticPool
+
 TEST_DATABASE_URL = "sqlite:///:memory:"
-test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+test_engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 
 @event.listens_for(test_engine, "connect")
 def _set_wal(dbapi_conn, _):
@@ -248,3 +254,77 @@ class TestStaleFeed:
         resp = client.get(f"/stores/{STORE_ID}/anomalies")
         stale = [a for a in resp.json()["anomalies"] if a["anomaly_type"] == "STALE_FEED"]
         assert any(s["severity"] == "CRITICAL" for s in stale)
+
+
+# ---------------------------------------------------------------------------
+# CONVERSION_DROP tests
+# ---------------------------------------------------------------------------
+
+class TestConversionDrop:
+    def test_conversion_drop_triggered_when_today_is_low(self, client):
+        from app.database import POSTransaction
+        db = next(override_get_db())
+        
+        # Day 1: 2 days ago
+        d1 = (datetime.now(tz=timezone.utc) - timedelta(days=2))
+        d1_base = d1.replace(hour=12, minute=0, second=0, microsecond=0)
+        d1_ts = d1_base.strftime("%Y-%m-%dT%H:%M:%SZ")
+        d1_txn_ts = (d1_base + timedelta(seconds=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        # Day 2: 1 day ago
+        d2 = (datetime.now(tz=timezone.utc) - timedelta(days=1))
+        d2_base = d2.replace(hour=12, minute=0, second=0, microsecond=0)
+        d2_ts = d2_base.strftime("%Y-%m-%dT%H:%M:%SZ")
+        d2_txn_ts = (d2_base + timedelta(seconds=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # Today
+        d_today = datetime.now(tz=timezone.utc)
+        d_today_base = d_today.replace(hour=12, minute=0, second=0, microsecond=0)
+        d_today_ts = d_today_base.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        client.post("/events/ingest", json={"events": [
+            # Day 1
+            {
+                "event_id": str(uuid.uuid4()), "store_id": STORE_ID, "camera_id": "CAM_ENTRY_01",
+                "visitor_id": "VIS_day1", "event_type": "ENTRY", "timestamp": d1_ts,
+                "confidence": 0.9, "is_staff": False, "metadata": {"session_seq": 1}
+            },
+            {
+                "event_id": str(uuid.uuid4()), "store_id": STORE_ID, "camera_id": "CAM_FLOOR_01",
+                "visitor_id": "VIS_day1", "event_type": "ZONE_ENTER", "timestamp": d1_ts,
+                "zone_id": "BILLING", "confidence": 0.9, "is_staff": False, "metadata": {"session_seq": 2}
+            },
+            # Day 2
+            {
+                "event_id": str(uuid.uuid4()), "store_id": STORE_ID, "camera_id": "CAM_ENTRY_01",
+                "visitor_id": "VIS_day2", "event_type": "ENTRY", "timestamp": d2_ts,
+                "confidence": 0.9, "is_staff": False, "metadata": {"session_seq": 1}
+            },
+            {
+                "event_id": str(uuid.uuid4()), "store_id": STORE_ID, "camera_id": "CAM_FLOOR_01",
+                "visitor_id": "VIS_day2", "event_type": "ZONE_ENTER", "timestamp": d2_ts,
+                "zone_id": "BILLING", "confidence": 0.9, "is_staff": False, "metadata": {"session_seq": 2}
+            },
+            # Today
+            {
+                "event_id": str(uuid.uuid4()), "store_id": STORE_ID, "camera_id": "CAM_ENTRY_01",
+                "visitor_id": "VIS_today", "event_type": "ENTRY", "timestamp": d_today_ts,
+                "confidence": 0.9, "is_staff": False, "metadata": {"session_seq": 1}
+            }
+        ]})
+        
+        db.add(POSTransaction(
+            transaction_id="TXN_DAY_1", store_id=STORE_ID,
+            timestamp=d1_txn_ts, basket_value_inr=100.0
+        ))
+        db.add(POSTransaction(
+            transaction_id="TXN_DAY_2", store_id=STORE_ID,
+            timestamp=d2_txn_ts, basket_value_inr=100.0
+        ))
+        db.commit()
+        
+        resp = client.get(f"/stores/{STORE_ID}/anomalies")
+        assert resp.status_code == 200
+        anom = [a for a in resp.json()["anomalies"] if a["anomaly_type"] == "CONVERSION_DROP"]
+        assert len(anom) == 1
+        assert anom[0]["severity"] == "WARN"

@@ -33,11 +33,14 @@ from app.main import app
 # Test database setup — in-memory SQLite for full isolation
 # ---------------------------------------------------------------------------
 
+from sqlalchemy.pool import StaticPool
+
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
 test_engine = create_engine(
     TEST_DATABASE_URL,
     connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
 )
 
 @event.listens_for(test_engine, "connect")
@@ -339,3 +342,57 @@ class TestHealth:
         resp = client.get("/health")
         stores = resp.json()["stores"]
         assert any(s["store_id"] == STORE_ID for s in stores)
+
+
+# ---------------------------------------------------------------------------
+# POS analytics endpoint tests
+# ---------------------------------------------------------------------------
+
+class TestPOSAnalytics:
+    def test_pos_analytics_returns_valid_structure(self, client):
+        resp = client.get(f"/stores/{STORE_ID}/pos?date={BASE_DATE}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total_transactions" in data
+        assert "total_revenue" in data
+        assert "avg_basket_inr" in data
+        assert "hourly" in data
+
+    def test_pos_analytics_aggregates_correctly(self, client):
+        # Insert a dummy transaction via DB session
+        from app.database import POSTransaction
+        db = next(override_get_db())
+        db.add(POSTransaction(
+            transaction_id="TXN_TEST_001",
+            store_id=STORE_ID,
+            timestamp=f"{BASE_DATE}T14:30:00Z",
+            basket_value_inr=1500.0,
+        ))
+        db.commit()
+        
+        resp = client.get(f"/stores/{STORE_ID}/pos?date={BASE_DATE}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_transactions"] == 1
+        assert data["total_revenue"] == 1500.0
+        assert data["avg_basket_inr"] == 1500.0
+        assert len(data["hourly"]) == 1
+        assert data["hourly"][0]["hour"] == 14
+        assert data["hourly"][0]["revenue"] == 1500.0
+
+
+# ---------------------------------------------------------------------------
+# Camera stats endpoint tests
+# ---------------------------------------------------------------------------
+
+class TestCameraStats:
+    def test_camera_stats_returns_valid_structure(self, client):
+        client.post("/events/ingest", json={
+            "events": [_make_event("ENTRY")]
+        })
+        resp = client.get(f"/stores/{STORE_ID}/cameras?date={BASE_DATE}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "cameras" in data
+        assert len(data["cameras"]) == 1
+        assert data["cameras"][0]["camera_id"] == "CAM_ENTRY_01"
