@@ -31,7 +31,7 @@ const NavIcon: FC<{ d: string }> = ({ d }) => (
 )
 
 const Sidebar: FC<Props> = ({ activePage, onNavigate, anomalyCount }) => (
-  <aside className="fixed left-0 top-0 h-screen w-56 bg-white border-r border-gray-100 flex flex-col z-20">
+  <aside className="fixed left-0 top-0 h-screen w-56 bg-white border-r border-gray-100 hidden md:flex flex-col z-20">
 
     {/* Logo */}
     <div className="px-5 py-5 border-b border-gray-100 shrink-0">

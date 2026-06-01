@@ -22,20 +22,14 @@ const SEV_TEXT: Record<Anomaly['severity'], string> = {
   CRITICAL: 'text-red-800',
 }
 
-interface Props { data: AnomaliesResponse | null; searchQuery?: string }
+interface Props { data: AnomaliesResponse | null }
 
-const AnomalyList: FC<Props> = ({ data, searchQuery = '' }) => {
+const AnomalyList: FC<Props> = ({ data }) => {
   if (!data) {
     return <div className="rounded-2xl bg-white border border-gray-100 shadow-sm h-40 animate-pulse" />
   }
 
-  const q = searchQuery.toLowerCase()
-  const items = data.anomalies.filter(a =>
-    !q ||
-    a.description.toLowerCase().includes(q) ||
-    a.anomaly_type.toLowerCase().includes(q) ||
-    a.severity.toLowerCase().includes(q)
-  )
+  const items = data.anomalies
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
@@ -44,9 +38,9 @@ const AnomalyList: FC<Props> = ({ data, searchQuery = '' }) => {
           <h3 className="font-semibold text-gray-900">Active Anomalies</h3>
           <p className="text-xs text-gray-400 mt-0.5">Real-time detection</p>
         </div>
-        {data.anomalies.length > 0 && (
+        {items.length > 0 && (
           <span className="text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-semibold">
-            {items.length}{q ? ` of ${data.anomalies.length}` : ''} active
+            {items.length} active
           </span>
         )}
       </div>
@@ -58,8 +52,8 @@ const AnomalyList: FC<Props> = ({ data, searchQuery = '' }) => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-gray-700">{q ? `No results for "${searchQuery}"` : 'All systems normal'}</p>
-          <p className="text-xs text-gray-400 mt-1">{q ? 'Try a different search term' : 'No anomalies detected'}</p>
+          <p className="text-sm font-medium text-gray-700">All systems normal</p>
+          <p className="text-xs text-gray-400 mt-1">No anomalies detected</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">

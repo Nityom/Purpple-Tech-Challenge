@@ -11,11 +11,11 @@ interface Props {
 }
 
 const Header: FC<Props> = ({ date, onDateChange, apiOk, lastUpdate, anomalyCount, onNavigate }) => (
-  <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-100 sticky top-0 z-10">
+  <header className="flex items-center justify-between px-4 md:px-6 py-3 bg-white border-b border-gray-100 sticky top-0 z-10">
     <div />
 
     {/* Right controls */}
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 md:gap-3">
       {lastUpdate && (
         <span className="text-xs text-gray-400 hidden md:block">Updated {lastUpdate}</span>
       )}
@@ -25,7 +25,7 @@ const Header: FC<Props> = ({ date, onDateChange, apiOk, lastUpdate, anomalyCount
           type="date"
           value={date}
           onChange={e => onDateChange(e.target.value)}
-          className="text-sm text-gray-700 border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white"
+          className="text-sm text-gray-700 border border-gray-200 rounded-xl px-2 md:px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white w-36 md:w-auto"
         />
       </label>
 

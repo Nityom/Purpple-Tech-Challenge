@@ -1,67 +1,98 @@
-# Store Intelligence — Apex Retail
+# Store Intelligence — Purpple Tech Challenge
 
-A complete pipeline that transforms raw CCTV footage into real-time store analytics: visitor counting, conversion funnel, zone heatmaps, and anomaly detection.
+Transforms raw CCTV footage into real-time retail analytics: visitor counting, conversion funnel, zone heatmaps, queue depth, and anomaly detection — all surfaced through a REST API and a React web dashboard.
 
-**North Star Metric**: Offline Store Conversion Rate = visitors who purchased ÷ total unique visitors
+**North Star Metric**: Offline Store Conversion Rate = unique purchasers ÷ unique visitors
 
 ---
 
-## Quick Start (5 commands)
+## Quick Start
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/Nityom/Purpple-Tech-Challenge && cd store-intelligence
-
-# 2. Create a virtual environment and install all dependencies
+# 1. Create and activate a virtual environment
 python3 -m venv .venv && source .venv/bin/activate
+
+# 2. Install all dependencies
 pip install -r requirements.txt -r requirements-pipeline.txt -r requirements-dashboard.txt
 
-# 3. Start the API
-uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-
-# 4. Run the detection pipeline on all CCTV clips
-API_URL=http://localhost:8000 bash pipeline/run.sh
-
-# 5. Query live metrics
-curl http://localhost:8000/stores/STORE_BLR_001/metrics
+# 3. One command — starts API, runs pipeline on all 5 clips, shows metrics summary,
+#    then launches the terminal dashboard
+bash start.sh
 ```
 
-> **Prerequisites**: Python 3.10+. Docker is optional (see [Docker section](#docker-optional) below).
+**Flags**
+
+| Flag | Effect |
+|------|--------|
+| *(none)* | API + pipeline + terminal dashboard |
+| `--api-only` | Start API only, skip pipeline and dashboard |
+| `--skip-pipeline` | Start API + dashboard, skip re-running the pipeline |
+
+> **Prerequisites**: Python 3.10+, Node.js 18+ (for the web dashboard). Docker is optional.
 
 ---
 
-## Running the Detection Pipeline
+## Web Dashboard
 
-### Option A — Docker (recommended for production)
+A React + Vite dashboard (mobile-responsive) runs separately from the terminal dashboard:
 
 ```bash
-# Build the pipeline container (downloads YOLOv8 model ~6MB)
-docker build -f Dockerfile.pipeline -t store-pipeline .
-
-# Process a single clip
-docker run --rm \
-  -v "$(pwd)/CCTV Footage:/clips" \
-  -v "$(pwd)/events:/app/events" \
-  store-pipeline \
-    --video "/clips/CAM 1.mp4" \
-    --store-id STORE_BLR_001 \
-    --camera-id CAM_ENTRY_01 \
-    --layout /app/store_layout.json \
-    --output /app/events/output.jsonl \
-    --clip-start 2026-04-10T10:00:00Z \
-    --api-url http://host.docker.internal:8000
+cd web
+npm install
+npm run dev
 ```
 
-### Option B — Local Python
+Open **http://localhost:5175** in your browser.
+
+Pages: Dashboard · Cameras · Analytics · POS Sales · Anomalies  
+Auto-polls the API every 10 seconds. Works on mobile via bottom navigation.
+
+---
+
+## API Endpoints
+
+Base URL: `http://localhost:8000`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/events/ingest` | Ingest up to 500 events (idempotent by `event_id`) |
+| `GET` | `/stores/{id}/metrics` | Unique visitors, conversion rate, zone dwell, queue depth |
+| `GET` | `/stores/{id}/funnel` | Entry → Zone → Billing → Purchase funnel with drop-off % |
+| `GET` | `/stores/{id}/heatmap` | Zone visit frequency, normalised 0–100 |
+| `GET` | `/stores/{id}/anomalies` | Active anomalies with severity and suggested action |
+| `GET` | `/stores/{id}/cameras` | Per-camera event breakdown (entries, exits, visitors) |
+| `GET` | `/stores/{id}/pos` | POS revenue, top products, hourly breakdown |
+| `GET` | `/health` | Service status and per-store feed freshness |
+
+**Example store ID**: `STORE_BLR_001` — Brigade Road, Bangalore, 2026-04-10
 
 ```bash
-# Install pipeline dependencies
-pip install -r requirements-pipeline.txt
+curl http://localhost:8000/stores/STORE_BLR_001/metrics?date=2026-04-10
+curl http://localhost:8000/stores/STORE_BLR_001/funnel?date=2026-04-10
+curl http://localhost:8000/stores/STORE_BLR_001/heatmap?date=2026-04-10
+curl http://localhost:8000/stores/STORE_BLR_001/anomalies
+curl http://localhost:8000/stores/STORE_BLR_001/cameras?date=2026-04-10
+curl http://localhost:8000/stores/STORE_BLR_001/pos?date=2026-04-10
+curl http://localhost:8000/health
+```
 
-# Process all 5 clips sequentially and feed events to the API in real time
-API_URL=http://localhost:8000 bash pipeline/run.sh
+Interactive API docs: **http://localhost:8000/docs**
 
-# Or process a single clip
+---
+
+## Detection Pipeline
+
+### Option A — One command (recommended)
+
+```bash
+bash start.sh
+```
+
+Runs all 5 clips sequentially, streams events to the API in real time, then prints a metrics summary.
+
+### Option B — Single clip
+
+```bash
 python pipeline/detect.py \
     --video "CCTV Footage/CAM 1.mp4" \
     --store-id STORE_BLR_001 \
@@ -72,73 +103,51 @@ python pipeline/detect.py \
     --api-url http://localhost:8000
 ```
 
-### Option C — Batch ingest (post-processing)
+### Option C — Batch ingest from saved JSONL
 
 ```bash
-# Run pipeline without API (saves to JSONL)
+# Run pipeline without live API (saves events to JSONL)
 bash pipeline/run.sh
 
-# Then ingest the JSONL file into the API
+# Then bulk-ingest the file
 python pipeline/ingest_batch.py \
     --events events/output.jsonl \
     --api-url http://localhost:8000 \
     --batch-size 500
 ```
 
-**Events output location**: `events/output.jsonl`
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/events/ingest` | Ingest up to 500 events (idempotent by `event_id`) |
-| `GET` | `/stores/{id}/metrics` | Unique visitors, conversion rate, zone dwell, queue depth |
-| `GET` | `/stores/{id}/funnel` | Entry → Zone → Billing → Purchase funnel with drop-off % |
-| `GET` | `/stores/{id}/heatmap` | Zone visit frequency, normalised 0–100 |
-| `GET` | `/stores/{id}/anomalies` | Active anomalies with severity and suggested action |
-| `GET` | `/health` | Service status and per-store feed freshness |
-
-**Example store ID**: `STORE_BLR_001` (Brigade Road, Bangalore)
+### Docker
 
 ```bash
-# Metrics
-curl http://localhost:8000/stores/STORE_BLR_001/metrics
+# API only
+docker compose up api
 
-# Funnel
-curl http://localhost:8000/stores/STORE_BLR_001/funnel
+# API + pipeline
+docker compose up
 
-# Heatmap
-curl http://localhost:8000/stores/STORE_BLR_001/heatmap
-
-# Anomalies
-curl http://localhost:8000/stores/STORE_BLR_001/anomalies
+# Build pipeline image manually
+docker build -f Dockerfile.pipeline -t store-pipeline .
+docker run --rm \
+  -v "$(pwd)/CCTV Footage:/clips" \
+  -v "$(pwd)/events:/app/events" \
+  store-pipeline \
+    --video "/clips/CAM 1.mp4" \
+    --store-id STORE_BLR_001 \
+    --camera-id CAM_ENTRY_01 \
+    --api-url http://host.docker.internal:8000
 ```
 
-Auto-generated API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
-
 ---
 
-## Live Dashboard (Part E — bonus)
+## Terminal Dashboard (bonus)
 
-The terminal dashboard polls the API every 5 seconds and displays live metrics:
+A `rich`-based live terminal view that polls every 5 seconds:
 
 ```bash
-# Install dashboard dependencies
-pip install -r requirements-dashboard.txt
-
-# Start the dashboard (API must be running)
 python dashboard/live.py --store-id STORE_BLR_001 --api-url http://localhost:8000
 ```
 
-Or with Docker Compose (includes dashboard):
-
-```bash
-docker compose --profile dashboard up
-```
-
-The dashboard shows: visitor count, conversion rate, queue depth, top zone by dwell, active anomalies, and the conversion funnel — all updating every 5 seconds.
+Displays: visitor count, conversion rate, queue depth, top zone by dwell, active anomalies, and the conversion funnel.
 
 ---
 
@@ -148,19 +157,19 @@ The dashboard shows: visitor count, conversion rate, queue depth, top zone by dw
 # Install test dependencies
 pip install -r requirements-test.txt
 
-# Run all tests with coverage
+# Run all tests with coverage report
 pytest
 
-# Run specific test files
+# Run specific suites
 pytest tests/test_pipeline.py -v
 pytest tests/test_metrics.py -v
 pytest tests/test_anomalies.py -v
 
-# Check coverage only
+# HTML coverage report
 pytest --cov=app --cov=pipeline --cov-report=html
 ```
 
-Coverage target: **>70%** statement coverage. Edge cases covered: empty store, all-staff clip, zero purchases, re-entry in funnel.
+Coverage target: **≥70%** statement coverage. Test suite: 69 tests across pipeline unit tests, API integration tests, and anomaly detection tests.
 
 ---
 
@@ -169,45 +178,54 @@ Coverage target: **>70%** statement coverage. Edge cases covered: empty store, a
 ```
 store-intelligence/
 ├── pipeline/
-│   ├── detect.py          # YOLOv8 + ByteTrack detection + zone classification
+│   ├── detect.py          # YOLOv8n + ByteTrack detection + zone classification
 │   ├── tracker.py         # Re-ID visitor tracking + staff detection
 │   ├── zones.py           # Zone classifiers, dwell timers, queue depth
 │   ├── emit.py            # Pydantic event schema + JSONL/API emission
 │   ├── ingest_batch.py    # Batch ingest helper
-│   └── run.sh             # Process all clips → events
+│   └── run.sh             # Process all 5 clips sequentially
 ├── app/
-│   ├── main.py            # FastAPI entrypoint
-│   ├── models.py          # Pydantic schemas
-│   ├── database.py        # SQLAlchemy + SQLite/PostgreSQL setup
-│   ├── ingestion.py       # Idempotent event ingest
-│   ├── metrics.py         # Real-time metric computation
-│   ├── funnel.py          # Conversion funnel logic
-│   ├── heatmap.py         # Zone heatmap computation
-│   ├── anomalies.py       # Anomaly detection
-│   ├── health.py          # Health endpoint
+│   ├── main.py            # FastAPI entrypoint + router registration
+│   ├── models.py          # Pydantic request/response schemas
+│   ├── database.py        # SQLAlchemy + SQLite setup
+│   ├── ingestion.py       # Idempotent event ingest logic
+│   ├── metrics.py         # Visitor, conversion, queue metrics
+│   ├── funnel.py          # Conversion funnel computation
+│   ├── heatmap.py         # Zone heatmap + dwell aggregation
+│   ├── anomalies.py       # Rule-based anomaly detection
+│   ├── cameras.py         # Per-camera event breakdown
+│   ├── pos_analytics.py   # POS CSV analytics
+│   ├── health.py          # Health check + feed freshness
 │   └── logger.py          # Structured JSON request logging
+├── web/                   # React + Vite dashboard (port 5175)
+│   └── src/
+│       ├── App.tsx
+│       ├── api.ts
+│       └── components/    # Header, Sidebar, KPIGrid, CameraGrid,
+│                          # FunnelChart, HeatmapGrid, POSPanel, AnomalyList
 ├── dashboard/
 │   └── live.py            # Rich terminal live dashboard
 ├── tests/
 │   ├── conftest.py
-│   ├── test_pipeline.py   # Pipeline unit tests
+│   ├── test_pipeline.py   # Pipeline unit tests (33 tests)
 │   ├── test_metrics.py    # API integration tests
 │   └── test_anomalies.py  # Anomaly detection tests
 ├── docs/
-│   ├── DESIGN.md          # Architecture + AI-Assisted Decisions
-│   └── CHOICES.md         # 3 key decisions with full reasoning
+│   ├── DESIGN.md          # System architecture + AI-Assisted Decisions
+│   └── CHOICES.md         # 3 key engineering decisions with full reasoning
 ├── CCTV Footage/          # Input: CAM 1–5.mp4
-├── events/                # Output: output.jsonl (generated by pipeline)
-├── store_layout.json      # Zone definitions and camera config
+├── events/                # Output: output.jsonl (523 events, generated by pipeline)
+├── store_layout.json      # Zone definitions and camera-to-zone mapping
 ├── Brigade_Bangalore_10_April_26 (1)bc6219c.csv  # POS transactions
+├── start.sh               # One-command launcher
 ├── docker-compose.yml
 ├── Dockerfile.api
 ├── Dockerfile.pipeline
-├── requirements.txt
-├── requirements-pipeline.txt
-├── requirements-dashboard.txt
-├── requirements-test.txt
-└── pyproject.toml
+├── requirements.txt            # API dependencies
+├── requirements-pipeline.txt   # Pipeline dependencies (YOLOv8, OpenCV)
+├── requirements-dashboard.txt  # Terminal dashboard (rich)
+├── requirements-test.txt       # Test dependencies
+└── pyproject.toml              # pytest config (testpaths, pythonpath, coverage)
 ```
 
 ---
@@ -217,33 +235,44 @@ store-intelligence/
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
 | `DATABASE_URL` | `sqlite:///./store_intelligence.db` | Database connection string |
-| `POS_CSV_PATH` | `Brigade_Bangalore_10_April_26 (1)bc6219c.csv` | Path to POS transactions CSV |
-| `API_URL` | *(not set)* | If set, pipeline POSTs events in real time |
-| `FRAME_STEP` | `3` | Process every Nth frame (lower = slower, more accurate) |
-| `CLIP_START` | `2026-04-10T10:00:00Z` | Recording start timestamp for the clips |
+| `POS_CSV_PATH` | `Brigade_Bangalore_10_April_26 (1)bc6219c.csv` | POS transactions CSV |
+| `API_URL` | *(not set)* | If set, pipeline POSTs events live while processing |
+| `FRAME_STEP` | `3` | Process every Nth frame (lower = slower, higher accuracy) |
+| `CLIP_START` | `2026-04-10T10:00:00Z` | Recording start timestamp for footage |
 
-### Switching to PostgreSQL
+### PostgreSQL
+
+Change `DATABASE_URL` in `docker-compose.yml`:
 
 ```bash
-# In docker-compose.yml, change DATABASE_URL to:
 DATABASE_URL=postgresql://user:password@db:5432/store_intelligence
 ```
 
 ---
 
-## Architecture Summary
+## Architecture
 
 ```
-CCTV Clips → YOLOv8n Detection → ByteTrack Tracking → Re-ID → Zone Events
-                                                                      ↓
-                                                       /events/ingest (POST)
-                                                                      ↓
-                                                         SQLite (events table)
-                                                                      ↓
-                          /metrics  /funnel  /heatmap  /anomalies  /health
-                                                                      ↓
-                                                         Rich Terminal Dashboard
+CCTV Clips
+    │
+    ▼
+YOLOv8n Detection ──► ByteTrack Tracking ──► Re-ID + Zone Classification
+                                                         │
+                                              POST /events/ingest
+                                                         │
+                                                  SQLite (events)
+                                                         │
+                          ┌──────────────────────────────┼──────────────────┐
+                          ▼              ▼               ▼                  ▼
+                      /metrics       /funnel         /heatmap          /anomalies
+                          │
+                ┌─────────┴─────────┐
+                ▼                   ▼
+        React Dashboard      Terminal Dashboard
+        (port 5175)          (dashboard/live.py)
 ```
 
 See [docs/DESIGN.md](docs/DESIGN.md) for the full architecture and AI-assisted design decisions.  
 See [docs/CHOICES.md](docs/CHOICES.md) for the three key engineering decisions with full reasoning.
+
+

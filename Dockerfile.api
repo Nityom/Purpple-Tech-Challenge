@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY store_layout.json .
 
-# Copy POS transactions CSV (adjust filename if different)
-COPY "Brigade_Bangalore_10_April_26 (1)bc6219c.csv" "./Brigade_Bangalore_10_April_26 (1)bc6219c.csv"
+# Copy POS transactions CSV (JSON array form handles spaces/parens in filename)
+COPY ["Brigade_Bangalore_10_April_26 (1)bc6219c.csv", "Brigade_Bangalore_10_April_26 (1)bc6219c.csv"]
 
 # Create events directory
 RUN mkdir -p /app/events

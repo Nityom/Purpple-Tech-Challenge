@@ -44,3 +44,28 @@ services:
     tty: true
     profiles:
       - dashboard   # Start with: docker compose --profile dashboard up
+
+  # -------------------------------------------------------------------------
+  # Detection Pipeline (optional — re-processes CCTV footage into the DB)
+  # Usage: docker compose --profile pipeline up pipeline
+  # -------------------------------------------------------------------------
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile.pipeline
+    container_name: store-intelligence-pipeline
+    volumes:
+      - ./store_intelligence.db:/app/store_intelligence.db
+      - ./events:/app/events
+      - ./CCTV Footage:/app/footage:ro
+    environment:
+      - DATABASE_URL=sqlite:///./store_intelligence.db
+    command: >
+      --footage-dir /app/footage
+      --store-id STORE_BLR_001
+      --api-url http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    profiles:
+      - pipeline   # Start with: docker compose --profile pipeline up

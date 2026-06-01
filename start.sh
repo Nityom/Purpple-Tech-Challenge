@@ -80,7 +80,15 @@ curl -s "$API_URL/stores/$STORE_ID/heatmap?date=$DATE" | "$VENV/python" -m json.
 
 # ── 5. Launch dashboard ──────────────────────────────────────────────────────
 echo ""
-echo "[start.sh] Launching dashboard (Ctrl+C to stop)..."
+echo "================================================================"
+echo " Quick Links"
+echo "================================================================"
+echo " Web Dashboard  →  http://localhost:5175  (cd web && npm run dev)"
+echo " API Docs       →  $API_URL/docs"
+echo " Stop API       →  kill \$(cat .api.pid)"
+echo "================================================================"
+echo ""
+echo "[start.sh] Launching terminal dashboard (Ctrl+C to stop, API keeps running)..."
 "$VENV/python" dashboard/live.py \
     --store-id "$STORE_ID" \
     --api-url  "$API_URL" \

@@ -1,0 +1,35 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / web
+web/node_modules/
+web/dist/
+web/.vite/
+
+# Large video assets (not needed in API image; mount or run pipeline separately)
+CCTV Footage/
+
+# Git
+.git/
+.gitmodules
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Docs
+docs/
+*.md
