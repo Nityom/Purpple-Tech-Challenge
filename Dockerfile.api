@@ -18,12 +18,16 @@ COPY store_layout.json .
 # Copy POS transactions CSV from updated resources
 COPY ["Updated-resorces/POS - sample transactionsb1e826f.csv", "POS - sample transactionsb1e826f.csv"]
 
-# Create events directory
-RUN mkdir -p /app/events
+# Copy pre-seeded events for auto-ingest on first start
+COPY events/ ./events/
+
+# Create DB directory (named volume mount point)
+RUN mkdir -p /app/db
 
 # Set environment variables
-ENV DATABASE_URL=sqlite:///./store_intelligence.db
+ENV DATABASE_URL=sqlite:////app/db/store_intelligence.db
 ENV POS_CSV_PATH="POS - sample transactionsb1e826f.csv"
+ENV SEED_EVENTS_ON_EMPTY=true
 
 EXPOSE 8000
 

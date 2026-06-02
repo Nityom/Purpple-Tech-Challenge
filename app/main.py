@@ -72,8 +72,64 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # Auto-seed events from bundled JSONL files on first start (empty events table)
+    if os.environ.get("SEED_EVENTS_ON_EMPTY", "false").lower() == "true":
+        _seed_events_if_empty()
+
     yield
     logger.info("shutdown")
+
+
+def _seed_events_if_empty() -> None:
+    """Ingest pre-generated events from JSONL files if the events table is empty."""
+    from app.database import SessionLocal
+    from app.ingestion import ingest_events as _ingest
+    from app.models import IngestRequest
+
+    db = SessionLocal()
+    try:
+        from sqlalchemy import text
+        count = db.execute(text("SELECT COUNT(*) FROM events")).scalar()
+        if count and count > 0:
+            logger.info("events_already_seeded", count=count)
+            return
+    finally:
+        db.close()
+
+    seed_files = [
+        "events/output.jsonl",          # STORE_BLR_001
+        "events/store2_events.jsonl",   # STORE_BLR_002
+    ]
+    total = 0
+    for path in seed_files:
+        if not os.path.exists(path):
+            logger.info("seed_file_not_found", path=path)
+            continue
+        events = []
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        events.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+        if not events:
+            continue
+        # Ingest in batches of 500
+        for i in range(0, len(events), 500):
+            batch = events[i:i + 500]
+            db = SessionLocal()
+            try:
+                req = IngestRequest(events=batch)
+                _ingest(req, db)
+                total += len(batch)
+            except Exception as exc:
+                logger.error("seed_ingest_error", path=path, error=str(exc))
+            finally:
+                db.close()
+
+    logger.info("events_seeded", total=total)
 
 
 # ---------------------------------------------------------------------------
