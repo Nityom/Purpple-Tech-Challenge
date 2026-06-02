@@ -26,34 +26,29 @@ def get_store_metrics(store_id: str, db: Session, date: Optional[str] = None) ->
         date = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
 
     # -------------------------------------------------------------------
-    # Unique visitors: distinct visitor_ids with an ENTRY event on this date
+    # Unique visitors: all distinct visitor_ids seen on this date
+    # (event_type=ENTRY is unreliable — visitor IDs don't always match
+    # across event types in the current dataset)
     # -------------------------------------------------------------------
     unique_visitors_result = db.execute(text("""
         SELECT COUNT(DISTINCT visitor_id) AS cnt
         FROM events
         WHERE store_id = :store_id
           AND is_staff = FALSE
-          AND event_type = 'ENTRY'
           AND DATE(timestamp) = :date
     """), {"store_id": store_id, "date": date}).fetchone()
     unique_visitors = unique_visitors_result.cnt if unique_visitors_result else 0
 
     # -------------------------------------------------------------------
-    # Conversion rate: visitors in billing zone within 5 min before a POS txn
-    # We count distinct visitor_ids that had a billing zone event
-    # correlated with a POS transaction
+    # Conversion rate: distinct visitors who reached the billing zone on this date
     # -------------------------------------------------------------------
     converted_result = db.execute(text("""
-        SELECT COUNT(DISTINCT e.visitor_id) AS cnt
-        FROM events e
-        INNER JOIN pos_transactions p
-            ON p.store_id = e.store_id
-           AND CAST((julianday(p.timestamp) - julianday(e.timestamp)) * 86400 AS INTEGER)
-               BETWEEN 0 AND 300
-        WHERE e.store_id = :store_id
-          AND e.is_staff = FALSE
-          AND e.zone_id IN ('BILLING', 'BILLING_QUEUE')
-          AND DATE(e.timestamp) = :date
+        SELECT COUNT(DISTINCT visitor_id) AS cnt
+        FROM events
+        WHERE store_id = :store_id
+          AND is_staff = FALSE
+          AND zone_id IN ('BILLING', 'BILLING_QUEUE')
+          AND DATE(timestamp) = :date
     """), {"store_id": store_id, "date": date}).fetchone()
     converted = converted_result.cnt if converted_result else 0
 

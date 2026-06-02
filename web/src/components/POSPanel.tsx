@@ -27,7 +27,7 @@ const POSPanel: FC<Props> = ({ data, storeName }) => {
       {data.hourly.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Revenue by Hour</p>
-          <ResponsiveContainer width="100%" height={130}>
+          <ResponsiveContainer width="100%" height={240}>
             <BarChart data={data.hourly} barCategoryGap="25%" margin={{ top: 4, right: 0, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
               <XAxis dataKey="hour" tickFormatter={h => `${h}h`} tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />

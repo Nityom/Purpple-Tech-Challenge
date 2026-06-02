@@ -146,7 +146,7 @@ export default function App() {
 
           {/* POS page */}
           {page === 'pos' && (
-            <div className="max-w-3xl">
+            <div>
               <POSPanel data={pos} storeName={STORES.find(s => s.id === storeId)?.name} />
             </div>
           )}
