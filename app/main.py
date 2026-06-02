@@ -51,7 +51,7 @@ from app.models import (
 
 POS_CSV_PATH = os.environ.get(
     "POS_CSV_PATH",
-    "Brigade_Bangalore_10_April_26 (1)bc6219c.csv",
+    "Updated-resorces/POS - sample transactionsb1e826f.csv",
 )
 
 
@@ -258,3 +258,48 @@ def health(db: Session = Depends(get_db)) -> HealthResponse:
     warnings for cameras that haven't sent events in 10+ minutes.
     """
     return get_health(db)
+
+
+_LAYOUT_CACHE: dict = {}
+
+@app.get(
+    "/stores/{store_id}/config",
+    summary="Camera and zone metadata for a store",
+)
+def store_config(store_id: str):
+    """
+    Returns camera descriptions and zone display names from store_layout.json.
+    Used by the dashboard to render store-specific labels.
+    """
+    global _LAYOUT_CACHE
+    if not _LAYOUT_CACHE:
+        layout_path = os.path.join(os.path.dirname(__file__), "..", "store_layout.json")
+        try:
+            with open(layout_path, encoding="utf-8") as f:
+                _LAYOUT_CACHE = json.load(f)
+        except FileNotFoundError:
+            _LAYOUT_CACHE = {}
+
+    store = _LAYOUT_CACHE.get(store_id)
+    if not store:
+        raise HTTPException(status_code=404, detail=f"Store {store_id} not found in layout")
+
+    cameras = {
+        cam_id: {
+            "description": cam.get("description", cam_id),
+            "type": cam.get("type", "floor"),
+            "zones_covered": cam.get("zones_covered", []),
+        }
+        for cam_id, cam in store.get("cameras", {}).items()
+    }
+    zones = {
+        zone_id: zone.get("display", zone_id)
+        for zone_id, zone in store.get("zones", {}).items()
+    }
+    return {
+        "store_id": store_id,
+        "store_name": store.get("store_name", store_id),
+        "address": store.get("address", ""),
+        "cameras": cameras,
+        "zones": zones,
+    }

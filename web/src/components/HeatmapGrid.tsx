@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import type { HeatmapResponse } from '../api'
+import type { HeatmapResponse, StoreConfig } from '../api'
 
 // Green shades: rank 1 = darkest, rank N = lightest
 const GREEN_SHADES = [
@@ -12,17 +12,23 @@ const GREEN_SHADES = [
 ]
 
 const ZONE_LABELS: Record<string, string> = {
-  ENTRY:         'Entry',
-  MAKEUP:        'Makeup',
-  SKINCARE:      'Skincare',
-  BATH_BODY:     'Bath & Body',
-  BILLING:       'Billing',
-  BILLING_QUEUE: 'Queue',
+  ENTRY:               'Entry',
+  ENTRY_EXIT:          'Entrance',
+  MAKEUP:              'Makeup',
+  SKINCARE:            'Skincare',
+  BATH_BODY:           'Bath & Body',
+  HAIR:                'Hair Care',
+  PERSONAL_CARE:       'Personal Care',
+  FRAGRANCE:           'Fragrance',
+  BILLING:             'Billing',
+  BILLING_QUEUE:       'Queue',
+  WALL_UNITS_TOP:      'Top Wall Units',
+  WALL_UNITS_BOTTOM:   'Bottom Wall Units',
 }
 
-interface Props { data: HeatmapResponse | null }
+interface Props { data: HeatmapResponse | null; storeConfig?: StoreConfig | null }
 
-const HeatmapGrid: FC<Props> = ({ data }) => {
+const HeatmapGrid: FC<Props> = ({ data, storeConfig }) => {
   if (!data) {
     return (
       <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
@@ -35,8 +41,9 @@ const HeatmapGrid: FC<Props> = ({ data }) => {
     )
   }
 
+  const zoneLabel = (id: string) => storeConfig?.zones[id] ?? ZONE_LABELS[id] ?? id.replace(/_/g, ' ')
   const sorted = [...data.zones].sort((a, b) => b.normalised_score - a.normalised_score)
-  const topLabel = ZONE_LABELS[sorted[0]?.zone_id] ?? sorted[0]?.zone_id ?? ''
+  const topLabel = zoneLabel(sorted[0]?.zone_id ?? '')
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
@@ -60,7 +67,7 @@ const HeatmapGrid: FC<Props> = ({ data }) => {
           const dwell = z.avg_dwell_ms >= 1000
             ? `${(z.avg_dwell_ms / 1000).toFixed(0)}s dwell`
             : z.avg_dwell_ms > 0 ? '<1s dwell' : null
-          const label = ZONE_LABELS[z.zone_id] ?? z.zone_id.replace(/_/g, ' ')
+          const label = zoneLabel(z.zone_id)
           return (
             <div key={z.zone_id} className="flex items-center gap-3">
               {/* Score pill */}

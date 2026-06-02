@@ -1,13 +1,14 @@
 {
   "STORE_BLR_001": {
-    "store_name": "Brigade_Bangalore",
+    "store_name": "Purplle Store 1",
     "pos_store_id": "ST1008",
     "city": "Bangalore",
     "address": "Brigade Road, Bangalore",
     "open_hours": { "open": "10:00", "close": "22:00" },
+    "layout_image": "Updated-resorces/Store 1/Store 1 - layout.png",
     "cameras": {
       "CAM_ENTRY_01": {
-        "file": "CAM 1.mp4",
+        "file": "CAM 3 - entry.mp4",
         "type": "entry_exit",
         "description": "Main entrance / exit threshold camera",
         "zones_covered": ["ENTRY_EXIT"],
@@ -22,7 +23,7 @@
         }
       },
       "CAM_FLOOR_01": {
-        "file": "CAM 2.mp4",
+        "file": "CAM 1 - zone.mp4",
         "type": "floor",
         "description": "Main floor — Skincare and Makeup aisles",
         "zones_covered": ["SKINCARE", "MAKEUP"],
@@ -32,7 +33,7 @@
         }
       },
       "CAM_FLOOR_02": {
-        "file": "CAM 3.mp4",
+        "file": "CAM 2 - zone.mp4",
         "type": "floor",
         "description": "Main floor — Hair Care and Bath & Body aisles",
         "zones_covered": ["HAIR", "BATH_BODY"],
@@ -42,9 +43,9 @@
         }
       },
       "CAM_FLOOR_03": {
-        "file": "CAM 4.mp4",
+        "file": "CAM 4 - zone.mp4",
         "type": "floor",
-        "description": "Main floor — Personal Care and Fragrance aisles",
+        "description": "Main floor — Personal Care and Fragrance aisles (file pending)",
         "zones_covered": ["PERSONAL_CARE", "FRAGRANCE"],
         "roi_polygons": {
           "PERSONAL_CARE": [[0.0, 0.0], [0.50, 0.0], [0.50, 1.0], [0.0, 1.0]],
@@ -52,7 +53,7 @@
         }
       },
       "CAM_BILLING_01": {
-        "file": "CAM 5.mp4",
+        "file": "CAM 5 - billing.mp4",
         "type": "billing",
         "description": "Billing counter and queue area",
         "zones_covered": ["BILLING", "BILLING_QUEUE"],
@@ -72,6 +73,83 @@
       "FRAGRANCE":     { "type": "product",   "sku_zone": "FRAGRANCE",    "display": "Fragrance Section" },
       "BILLING":       { "type": "billing",   "sku_zone": null,           "display": "Billing Counter" },
       "BILLING_QUEUE": { "type": "billing",   "sku_zone": null,           "display": "Billing Queue Area" }
+    },
+    "staff_detection": {
+      "method": "uniform_color_heuristic",
+      "uniform_hue_range_hsv": [90, 130],
+      "min_zone_presence_minutes": 60,
+      "comment": "Staff identified by store uniform colour (teal/green HSV) and long continuous presence"
+    }
+  },
+  "STORE_BLR_002": {
+    "store_name": "Purplle_Store_2",
+    "pos_store_id": "ST1009",
+    "city": "Bangalore",
+    "address": "Store 2 Location, Bangalore",
+    "open_hours": { "open": "10:00", "close": "22:00" },
+    "layout_image": "Updated-resorces/Store 2/store 2 - layout.png",
+    "cameras": {
+      "CAM_ENTRY_01": {
+        "file": "entry 1.mp4",
+        "type": "entry_exit",
+        "description": "Main entrance (entry 1)",
+        "zones_covered": ["ENTRY_EXIT"],
+        "entry_line": {
+          "axis": "x",
+          "normalized_position": 0.15,
+          "inbound_direction": "left_to_right",
+          "comment": "Person crossing line left→right = ENTRY; right→left = EXIT"
+        },
+        "roi_polygons": {
+          "ENTRY_EXIT": [[0.0, 0.0], [0.30, 0.0], [0.30, 1.0], [0.0, 1.0]]
+        }
+      },
+      "CAM_ENTRY_02": {
+        "file": "entry 2.mp4",
+        "type": "entry_exit",
+        "description": "Secondary entrance (entry 2)",
+        "zones_covered": ["ENTRY_EXIT"],
+        "entry_line": {
+          "axis": "x",
+          "normalized_position": 0.15,
+          "inbound_direction": "left_to_right",
+          "comment": "Person crossing line left→right = ENTRY; right→left = EXIT"
+        },
+        "roi_polygons": {
+          "ENTRY_EXIT": [[0.0, 0.0], [0.30, 0.0], [0.30, 1.0], [0.0, 1.0]]
+        }
+      },
+      "CAM_FLOOR_01": {
+        "file": "zone.mp4",
+        "type": "floor",
+        "description": "Main floor — brand shelving zones",
+        "zones_covered": ["WALL_UNITS_TOP", "WALL_UNITS_BOTTOM", "FRAGRANCE", "MAKEUP"],
+        "roi_polygons": {
+          "WALL_UNITS_TOP":    [[0.0, 0.0], [1.0, 0.0], [1.0, 0.25], [0.0, 0.25]],
+          "WALL_UNITS_BOTTOM": [[0.0, 0.75], [1.0, 0.75], [1.0, 1.0], [0.0, 1.0]],
+          "FRAGRANCE":         [[0.10, 0.30], [0.40, 0.30], [0.40, 0.70], [0.10, 0.70]],
+          "MAKEUP":            [[0.45, 0.30], [0.75, 0.30], [0.75, 0.70], [0.45, 0.70]]
+        }
+      },
+      "CAM_BILLING_01": {
+        "file": "billing_area.mp4",
+        "type": "billing",
+        "description": "Billing counter and queue area",
+        "zones_covered": ["BILLING", "BILLING_QUEUE"],
+        "roi_polygons": {
+          "BILLING":       [[0.0, 0.0], [1.0, 0.0], [1.0, 0.40], [0.0, 0.40]],
+          "BILLING_QUEUE": [[0.0, 0.40], [1.0, 0.40], [1.0, 1.0], [0.0, 1.0]]
+        }
+      }
+    },
+    "zones": {
+      "ENTRY_EXIT":        { "type": "threshold", "sku_zone": null,          "display": "Store Entrance / Exit" },
+      "WALL_UNITS_TOP":    { "type": "product",   "sku_zone": "SKINCARE",    "display": "Top Wall Units (Salm/TFS/Minimalis/Aqualogi/Foxtal/JC)" },
+      "WALL_UNITS_BOTTOM": { "type": "product",   "sku_zone": "COSMETICS",   "display": "Bottom Wall Units (Fac/Mars+Nybae/Mens/Lo'real/Beaut)" },
+      "FRAGRANCE":         { "type": "product",   "sku_zone": "FRAGRANCE",   "display": "Fragrance / Nail Condola" },
+      "MAKEUP":            { "type": "product",   "sku_zone": "MAKEUP",      "display": "Makeup Unit" },
+      "BILLING":           { "type": "billing",   "sku_zone": null,          "display": "Billing Counter" },
+      "BILLING_QUEUE":     { "type": "billing",   "sku_zone": null,          "display": "Billing Queue Area" }
     },
     "staff_detection": {
       "method": "uniform_color_heuristic",

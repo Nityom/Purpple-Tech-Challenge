@@ -121,6 +121,20 @@ export interface POSAnalyticsResponse {
   top_categories: POSCategory[]
 }
 
+export interface StoreCameraConfig {
+  description: string
+  type: string
+  zones_covered: string[]
+}
+
+export interface StoreConfig {
+  store_id: string
+  store_name: string
+  address: string
+  cameras: Record<string, StoreCameraConfig>
+  zones: Record<string, string>
+}
+
 export interface HealthResponse {
   status: string
   checked_at: string
@@ -130,10 +144,11 @@ export interface HealthResponse {
 
 // ── Fetchers ──────────────────────────────────────────────────────────────
 
-export const fetchMetrics   = (id: string, date: string) => apiFetch<MetricsResponse>(`/stores/${id}/metrics?date=${date}`)
-export const fetchFunnel    = (id: string, date: string) => apiFetch<FunnelResponse>(`/stores/${id}/funnel?date=${date}`)
-export const fetchHeatmap   = (id: string, date: string) => apiFetch<HeatmapResponse>(`/stores/${id}/heatmap?date=${date}`)
-export const fetchAnomalies = (id: string)               => apiFetch<AnomaliesResponse>(`/stores/${id}/anomalies`)
-export const fetchCameras   = (id: string, date: string) => apiFetch<CameraStatsResponse>(`/stores/${id}/cameras?date=${date}`)
-export const fetchPOS       = (id: string, date: string) => apiFetch<POSAnalyticsResponse>(`/stores/${id}/pos?date=${date}`)
-export const fetchHealth    = ()                          => apiFetch<HealthResponse>('/health')
+export const fetchMetrics     = (id: string, date: string) => apiFetch<MetricsResponse>(`/stores/${id}/metrics?date=${date}`)
+export const fetchFunnel      = (id: string, date: string) => apiFetch<FunnelResponse>(`/stores/${id}/funnel?date=${date}`)
+export const fetchHeatmap     = (id: string, date: string) => apiFetch<HeatmapResponse>(`/stores/${id}/heatmap?date=${date}`)
+export const fetchAnomalies   = (id: string)               => apiFetch<AnomaliesResponse>(`/stores/${id}/anomalies`)
+export const fetchCameras     = (id: string, date: string) => apiFetch<CameraStatsResponse>(`/stores/${id}/cameras?date=${date}`)
+export const fetchPOS         = (id: string, date: string) => apiFetch<POSAnalyticsResponse>(`/stores/${id}/pos?date=${date}`)
+export const fetchHealth      = ()                          => apiFetch<HealthResponse>('/health')
+export const fetchStoreConfig = (id: string)               => apiFetch<StoreConfig>(`/stores/${id}/config`)

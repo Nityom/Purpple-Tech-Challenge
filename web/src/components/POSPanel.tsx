@@ -2,11 +2,11 @@ import type { FC } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import type { POSAnalyticsResponse } from '../api'
 
-interface Props { data: POSAnalyticsResponse | null }
+interface Props { data: POSAnalyticsResponse | null; storeName?: string }
 
 const fmtCur = (n: number) => `₹${n.toLocaleString('en-IN')}`
 
-const POSPanel: FC<Props> = ({ data }) => {
+const POSPanel: FC<Props> = ({ data, storeName }) => {
   if (!data) {
     return <div className="rounded-2xl bg-white border border-gray-100 shadow-sm h-64 animate-pulse" />
   }
@@ -16,7 +16,7 @@ const POSPanel: FC<Props> = ({ data }) => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-gray-900">POS Analytics</h3>
-          <p className="text-xs text-gray-400 mt-0.5">From CSV · Brigade Bangalore</p>
+          <p className="text-xs text-gray-400 mt-0.5">POS Sales · {storeName ?? 'All Stores'}</p>
         </div>
         <span className="text-xs px-2.5 py-1 bg-green-50 text-green-700 rounded-full font-semibold border border-green-100">
           {data.total_transactions} txns

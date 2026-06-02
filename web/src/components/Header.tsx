@@ -1,16 +1,13 @@
 import type { FC } from 'react'
-import type { NavPage } from './Sidebar'
 
 interface Props {
   date: string
   onDateChange: (d: string) => void
   apiOk: boolean
   lastUpdate: string
-  anomalyCount: number
-  onNavigate: (page: NavPage) => void
 }
 
-const Header: FC<Props> = ({ date, onDateChange, apiOk, lastUpdate, anomalyCount, onNavigate }) => (
+const Header: FC<Props> = ({ date, onDateChange, apiOk, lastUpdate }) => (
   <header className="flex items-center justify-between px-4 md:px-6 py-3 bg-white border-b border-gray-100 sticky top-0 z-10">
     <div />
 
@@ -37,28 +34,12 @@ const Header: FC<Props> = ({ date, onDateChange, apiOk, lastUpdate, anomalyCount
         {apiOk ? 'API Live' : 'Offline'}
       </div>
 
-      {/* Bell - navigates to anomalies */}
-      <button
-        onClick={() => onNavigate('anomalies')}
-        className="relative w-9 h-9 border border-gray-200 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
-        title="View anomalies"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-        {anomalyCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-            {anomalyCount > 9 ? '9+' : anomalyCount}
-          </span>
-        )}
-      </button>
-
       {/* Avatar */}
       <div className="flex items-center gap-2.5 pl-2 border-l border-gray-100">
         <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center text-sm font-bold text-green-700 shrink-0">S</div>
         <div className="hidden sm:block">
           <p className="text-sm font-semibold text-gray-800 leading-tight">Store Manager</p>
-          <p className="text-[10px] text-gray-400 leading-tight">Brigade Road</p>
+          <p className="text-[10px] text-gray-400 leading-tight">Purplle Road</p>
         </div>
       </div>
     </div>

@@ -9,12 +9,19 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.models import POSAnalyticsResponse, POSHourly, POSProduct, POSCategory
 
-POS_CSV_PATH = os.getenv("POS_CSV_PATH", "Brigade_Bangalore_10_April_26 (1)bc6219c.csv")
+POS_CSV_PATH = os.getenv("POS_CSV_PATH", "Updated-resorces/POS - sample transactionsb1e826f.csv")
 _POS_STORE_ID_MAP = {"ST1008": "STORE_BLR_001"}
+# Stores that share the CSV sample data — map them to the donor store for CSV lookups
+_CSV_DONOR = {"STORE_BLR_002": "STORE_BLR_001"}
 
 
 def _csv_store(raw: str) -> str:
     return _POS_STORE_ID_MAP.get(raw, raw)
+
+
+def _effective_store(store_id: str) -> str:
+    """Return the store whose CSV rows to read (handles shared demo data)."""
+    return _CSV_DONOR.get(store_id, store_id)
 
 
 def get_pos_analytics(store_id: str, db: Session, date: Optional[str] = None) -> POSAnalyticsResponse:
@@ -59,7 +66,7 @@ def get_pos_analytics(store_id: str, db: Session, date: Optional[str] = None) ->
         with open(POS_CSV_PATH, encoding="utf-8-sig", newline="") as f:
             for row in csv.DictReader(f):
                 raw_store = row.get("store_id", "")
-                if _csv_store(raw_store) != store_id:
+                if _csv_store(raw_store) != _effective_store(store_id):
                     continue
                 date_str = row.get("order_date", "")
                 # DD-MM-YYYY → YYYY-MM-DD
@@ -71,22 +78,31 @@ def get_pos_analytics(store_id: str, db: Session, date: Optional[str] = None) ->
                     continue
 
                 try:
-                    qty = int(row.get("qty", 0) or 0)
                     revenue = float(row.get("total_amount", 0) or 0)
                 except ValueError:
                     continue
 
-                pname = (row.get("product_name") or "Unknown")[:60]
-                brand = row.get("brand_name") or ""
-                cat   = row.get("dep_name") or "Other"
-                subcat = row.get("sub_category") or ""
+                # Actual CSV has brand_name + product_id but no product_name/dep_name/qty
+                brand  = (row.get("brand_name") or "Unknown").strip()
+                prod_id = (row.get("product_id") or "").strip()
+                # Use "brand · product_id" as the product label when brand is known
+                if brand and brand != "Unknown" and prod_id:
+                    pname = f"{brand} #{prod_id}"
+                elif brand and brand != "Unknown":
+                    pname = brand
+                else:
+                    pname = f"Product {prod_id}" if prod_id else "Unknown"
+                pname = pname[:60]
+
+                # Category = brand (most granular grouping available in this CSV)
+                cat = brand if brand and brand != "Unknown" else "Other"
 
                 p = prod_map.setdefault(pname, {"product": pname, "brand": brand, "qty": 0, "revenue": 0.0})
-                p["qty"] += qty
+                p["qty"] += 1          # each row = 1 line item sold
                 p["revenue"] += revenue
 
-                c = cat_map.setdefault(cat, {"category": cat, "sub_category": subcat, "qty": 0, "revenue": 0.0})
-                c["qty"] += qty
+                c = cat_map.setdefault(cat, {"category": cat, "sub_category": "", "qty": 0, "revenue": 0.0})
+                c["qty"] += 1
                 c["revenue"] += revenue
 
         top_products = [

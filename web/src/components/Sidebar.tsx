@@ -1,11 +1,17 @@
 import type { FC } from 'react'
 
-export type NavPage = 'dashboard' | 'cameras' | 'analytics' | 'pos' | 'anomalies'
+export type NavPage = 'dashboard' | 'cameras' | 'analytics' | 'pos'
+
+export const STORES: { id: string; name: string; sub: string }[] = [
+  { id: 'STORE_BLR_001', name: 'Purplle Store 1', sub: 'Store 1 · BLR' },
+  { id: 'STORE_BLR_002', name: 'Purplle Store 2', sub: 'Store 2 · BLR' },
+]
 
 interface Props {
-  activePage: NavPage
-  onNavigate: (page: NavPage) => void
-  anomalyCount: number
+  activePage:    NavPage
+  onNavigate:    (page: NavPage) => void
+  storeId:       string
+  onStoreChange: (id: string) => void
 }
 
 const ICONS: Record<NavPage, string> = {
@@ -13,7 +19,6 @@ const ICONS: Record<NavPage, string> = {
   cameras:   'M15 10l4.553-2.277A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z',
   analytics: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
   pos:       'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
-  anomalies: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
 }
 
 const NAV: { id: NavPage; label: string }[] = [
@@ -21,7 +26,6 @@ const NAV: { id: NavPage; label: string }[] = [
   { id: 'cameras',   label: 'Cameras'   },
   { id: 'analytics', label: 'Analytics' },
   { id: 'pos',       label: 'POS Sales' },
-  { id: 'anomalies', label: 'Anomalies' },
 ]
 
 const NavIcon: FC<{ d: string }> = ({ d }) => (
@@ -30,7 +34,7 @@ const NavIcon: FC<{ d: string }> = ({ d }) => (
   </svg>
 )
 
-const Sidebar: FC<Props> = ({ activePage, onNavigate, anomalyCount }) => (
+const Sidebar: FC<Props> = ({ activePage, onNavigate, storeId, onStoreChange }) => (
   <aside className="fixed left-0 top-0 h-screen w-56 bg-white border-r border-gray-100 hidden md:flex flex-col z-20">
 
     {/* Logo */}
@@ -62,20 +66,30 @@ const Sidebar: FC<Props> = ({ activePage, onNavigate, anomalyCount }) => (
           >
             <NavIcon d={ICONS[item.id]} />
             <span className="flex-1">{item.label}</span>
-            {item.id === 'anomalies' && anomalyCount > 0 && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                {anomalyCount}
-              </span>
-            )}
           </button>
         ))}
       </div>
     </nav>
 
-    {/* Store strip */}
-    <div className="mx-3 mb-4 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 shrink-0">
-      <p className="text-xs font-semibold text-gray-700">Brigade Bangalore</p>
-      <p className="text-[10px] text-gray-400 mt-0.5">10 Apr 2026 · STORE_BLR_001</p>
+    {/* Store selector */}
+    <div className="mx-3 mb-4 shrink-0">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-1.5">Active Store</p>
+      <div className="flex flex-col gap-1">
+        {STORES.map(s => (
+          <button
+            key={s.id}
+            onClick={() => onStoreChange(s.id)}
+            className={`w-full text-left px-3 py-2 rounded-xl border transition-all text-xs font-medium ${
+              storeId === s.id
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : 'bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            <p className="font-semibold leading-tight">{s.name}</p>
+            <p className="text-[10px] opacity-70 leading-tight mt-0.5">{s.sub}</p>
+          </button>
+        ))}
+      </div>
     </div>
   </aside>
 )

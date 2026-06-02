@@ -128,10 +128,12 @@ def get_db():
 # POS transaction loader
 # ---------------------------------------------------------------------------
 
-# Map POS CSV store_id → API store_id
+# Map POS CSV store_id → primary API store_id
 _POS_STORE_ID_MAP = {
     "ST1008": "STORE_BLR_001",
 }
+# Stores that share the same CSV POS sample data (demo)
+_POS_SHARED_STORES = ["STORE_BLR_001", "STORE_BLR_002"]
 
 
 def load_pos_transactions(csv_path: str, db: Session) -> int:
@@ -177,18 +179,22 @@ def load_pos_transactions(csv_path: str, db: Session) -> int:
             if not txn_id or not store_id:
                 continue
 
-            # Skip if already in DB or seen earlier in this file (handles intra-CSV dupes)
-            if txn_id in existing_ids or txn_id in seen_this_load:
-                continue
+            # Determine all stores to insert for (shared demo data)
+            stores_to_insert = _POS_SHARED_STORES if store_id in _POS_SHARED_STORES else [store_id]
 
-            seen_this_load.add(txn_id)
-            db.add(POSTransaction(
-                transaction_id=txn_id,
-                store_id=store_id,
-                timestamp=ts,
-                basket_value_inr=basket,
-            ))
-            inserted += 1
+            for sid in stores_to_insert:
+                # Prefix txn_id per store to keep unique constraint happy
+                sid_txn = txn_id if sid == store_id else f"{sid[:3].lower()}_{txn_id}"
+                if sid_txn in existing_ids or sid_txn in seen_this_load:
+                    continue
+                seen_this_load.add(sid_txn)
+                db.add(POSTransaction(
+                    transaction_id=sid_txn,
+                    store_id=sid,
+                    timestamp=ts,
+                    basket_value_inr=basket,
+                ))
+                inserted += 1
 
     db.commit()
     return inserted

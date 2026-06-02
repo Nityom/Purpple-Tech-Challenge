@@ -15,15 +15,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY store_layout.json .
 
-# Copy POS transactions CSV (JSON array form handles spaces/parens in filename)
-COPY ["Brigade_Bangalore_10_April_26 (1)bc6219c.csv", "Brigade_Bangalore_10_April_26 (1)bc6219c.csv"]
+# Copy POS transactions CSV from updated resources
+COPY ["Updated-resorces/POS - sample transactionsb1e826f.csv", "POS - sample transactionsb1e826f.csv"]
 
 # Create events directory
 RUN mkdir -p /app/events
 
 # Set environment variables
 ENV DATABASE_URL=sqlite:///./store_intelligence.db
-ENV POS_CSV_PATH="Brigade_Bangalore_10_April_26 (1)bc6219c.csv"
+ENV POS_CSV_PATH="POS - sample transactionsb1e826f.csv"
 
 EXPOSE 8000
 

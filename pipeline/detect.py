@@ -9,7 +9,7 @@ Processes a single CCTV video clip through the full pipeline:
   5. Event emission to JSONL + optional API POST (emit.py)
 
 Usage:
-    python detect.py --video "CCTV Footage/CAM 1.mp4" \\
+    python detect.py --video "Updated-resorces/Store 1/CAM 1 - zone.mp4" \\
                      --store-id STORE_BLR_001 \\
                      --camera-id CAM_ENTRY_01 \\
                      --layout store_layout.json \\
